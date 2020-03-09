@@ -17,6 +17,7 @@
 
 import logging
 import os
+import json
 
 from ...file_utils import is_tf_available
 from .utils import DataProcessor, InputExample, InputFeatures
@@ -164,7 +165,49 @@ def glue_convert_examples_to_features(
         )
 
     return features
+# -----------------------------------------------------------------------
+# New class for BoolQ task
 
+class BoolqProcessor(DataProcessor):
+    """Processor for the BoolQ data set (SuperGLUE version)."""
+
+    def get_example_from_tensor_dict(self, tensor_dict):
+        """See base class."""
+        return InputExample(
+            tensor_dict["idx"].numpy(),
+            tensor_dict["question"].numpy().decode("utf-8"),
+            tensor_dict["passage"].numpy().decode("utf-8"),
+            str(tensor_dict["label"].numpy()),
+        )
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.jsonl")))
+        return self._create_examples(self._read_json(os.path.join(data_dir, "train.jsonl")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(self._read_json(os.path.join(data_dir, "val.jsonl")), "val")
+
+    def get_labels(self):
+        """See base class."""
+        return [True, False]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, line) in enumerate(lines):
+            guid = "%s-%s" % (set_type, line["idx"])
+            text_a = line["question"]
+            text_b = line["passage"]
+            label = line["label"]
+            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+        return examples
+    def _read_json(input_file):
+        """Reads a jsonl file."""
+        with open(input_file, "r", encoding="utf-8-sig") as f:
+            return [json.loads(l) for l in f]
+#---------------------------------------------------------------------------
 
 class MrpcProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
@@ -526,6 +569,7 @@ glue_tasks_num_labels = {
     "qnli": 2,
     "rte": 2,
     "wnli": 2,
+    "boolq": 2,
 }
 
 glue_processors = {
@@ -539,6 +583,7 @@ glue_processors = {
     "qnli": QnliProcessor,
     "rte": RteProcessor,
     "wnli": WnliProcessor,
+    "boolq": BoolqProcessor,
 }
 
 glue_output_modes = {
@@ -552,4 +597,5 @@ glue_output_modes = {
     "qnli": "classification",
     "rte": "classification",
     "wnli": "classification",
+    "boolq": "classification",
 }
