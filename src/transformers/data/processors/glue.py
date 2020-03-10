@@ -203,7 +203,7 @@ class BoolqProcessor(DataProcessor):
             label = line["label"]
             examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
-    def _read_json(input_file):
+    def _read_json(self, input_file):
         """Reads a jsonl file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
